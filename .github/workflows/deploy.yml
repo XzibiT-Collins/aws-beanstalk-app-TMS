@@ -2,7 +2,7 @@ name: Build & Deploy Java App to Beanstalk
 
 on:
   push:
-    branches: [main]
+    branches: [new]
 
 jobs:
   deploy:
