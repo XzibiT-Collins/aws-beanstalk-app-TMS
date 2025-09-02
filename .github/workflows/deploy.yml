@@ -15,44 +15,34 @@ jobs:
       - name: Set up Java
         uses: actions/setup-java@v3
         with:
-          java-version: '21'               # ✅ Updated to Java 21
-          distribution: 'temurin'          # ✅ Recommended Java distribution
+          java-version: '21'
+          distribution: 'temurin'
 
       - name: Build with Maven
         run: mvn clean package
 
-      - name: Rename WAR to app.jar
+      - name: Rename JAR file
         run: mv target/*.jar TMS-ASG-LAB-0.0.1-SNAPSHOT.jar
 
-
-
-      # create folder for deployment
-      - name: Create deployment folder
-        run: mkdir -p deploy
-          # copy files to deployment folder
+      - name: Create deployment package
+        run: |
+          mkdir -p deploy
           cp TMS-ASG-LAB-0.0.1-SNAPSHOT.jar deploy/
           cp Procfile deploy/
-          
-          # zip deployment folder
           cd deploy
           zip -r ../deploy.zip .
           cd ..
-        
-          
-          # set zip file name
           echo "ZIP_FILE=deploy.zip" >> $GITHUB_ENV
 
-
-      # ✅ FIXED: Added aws-region — this line prevents the error you got
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}   # ✅ <-- THIS LINE IS CRITICAL
+          aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Upload WAR to S3
-        run: aws s3 cp TMS-ASG-LAB-0.0.1-SNAPSHOT.jar s3://${{ secrets.S3_BUCKET_NAME }}/TMS-ASG-LAB-0.0.1-SNAPSHOT.jar
+      - name: Upload to S3
+        run: aws s3 cp deploy.zip s3://${{ secrets.S3_BUCKET_NAME }}/deploy.zip
 
       - name: Deploy to Elastic Beanstalk
         uses: einaregilsson/beanstalk-deploy@v20
@@ -63,4 +53,4 @@ jobs:
           environment_name: ${{ secrets.EB_ENV_NAME }}
           version_label: v-${{ github.run_number }}
           region: ${{ secrets.AWS_REGION }}
-          deployment_package: TMS-ASG-LAB-0.0.1-SNAPSHOT.jar
+          deployment_package: deploy.zip
