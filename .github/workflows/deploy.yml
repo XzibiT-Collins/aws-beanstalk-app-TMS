@@ -24,6 +24,25 @@ jobs:
       - name: Rename WAR to app.jar
         run: mv target/*.jar TMS-ASG-LAB-0.0.1-SNAPSHOT.jar
 
+
+
+      # create folder for deployment
+      - name: Create deployment folder
+        run: mkdir -p deploy
+          # copy files to deployment folder
+          cp TMS-ASG-LAB-0.0.1-SNAPSHOT.jar deploy/
+          cp Procfile deploy/
+          
+          # zip deployment folder
+          cd deploy
+          zip -r ../deploy.zip .
+          cd ..
+        
+          
+          # set zip file name
+          echo "ZIP_FILE=deploy.zip" >> $GITHUB_ENV
+
+
       # ✅ FIXED: Added aws-region — this line prevents the error you got
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
