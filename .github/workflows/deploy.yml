@@ -1,0 +1,47 @@
+name: Build & Deploy Java App to Beanstalk
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: '21'               # ✅ Updated to Java 21
+          distribution: 'temurin'          # ✅ Recommended Java distribution
+
+      - name: Build with Maven
+        run: mvn clean package
+
+      - name: Rename WAR to app.jar
+        run: mv target/*.jar TMS-ASG-LAB-0.0.1-SNAPSHOT.jar
+
+      # ✅ FIXED: Added aws-region — this line prevents the error you got
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}   # ✅ <-- THIS LINE IS CRITICAL
+
+      - name: Upload WAR to S3
+        run: aws s3 cp TMS-ASG-LAB-0.0.1-SNAPSHOT.jar s3://${{ secrets.S3_BUCKET_NAME }}/TMS-ASG-LAB-0.0.1-SNAPSHOT.jar
+
+      - name: Deploy to Elastic Beanstalk
+        uses: einaregilsson/beanstalk-deploy@v20
+        with:
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          application_name: ${{ secrets.EB_APP_NAME }}
+          environment_name: ${{ secrets.EB_ENV_NAME }}
+          version_label: v-${{ github.run_number }}
+          region: ${{ secrets.AWS_REGION }}
+          deployment_package: TMS-ASG-LAB-0.0.1-SNAPSHOT.jar
